@@ -131,24 +131,44 @@ namespace AntMe.Player.AntMe.Ameisen
         
         public override void Sieht(Obst obst)
         {
-            if (AktuelleLast == 0 && obst.Menge / MaximaleLast > 0)
+            if(!Storage.obst.ContainsKey(obst))
             {
+                Storage.obst.Add(obst, new List<Brain>());
+                Storage.äpfel.Add(obst);
+            }
+            List<Brain> träger = Storage.obst[obst];
+            if (AktuelleLast < MaximaleLast)
+            {
+                bool take = true;
                 try
                 {
                     if (sugar != null && getD(a, obst) + getD(obst, bau) > getD(a, sugar) + getD(sugar, bau))
                     {
-                        return;
+                        take = false;
                     }
                 }
                 catch (Exception ex)
                 {
+                    take = false;
                     Denke(ex.Message);
                 }
-                
 
-                apple = obst;
-                sugar = null;
-                Sprint(apple);
+                if (take)
+                {
+                    apple = obst;
+                    sugar = null;
+                    if (!träger.Contains(this))
+                    {
+                        Storage.obst[obst].Add(this);
+                    }
+                    Sprint(apple);
+                }
+            }
+
+            
+            if (BrauchtNochTräger(obst)) // TODO
+            {
+                SprüheMarkierung(2000 + n, 1000);
             }
         }
         
@@ -180,25 +200,31 @@ namespace AntMe.Player.AntMe.Ameisen
 
         public override void ZielErreicht(Obst obst)
         {
-            if(AktuelleLast == 0)
-                Nimm(obst);
-            if(BrauchtNochTräger(obst))
+            int n = 0;
+
+            for (int i = 0; i < Storage.obst.Count; i++)
             {
-                int n = 0;
-                foreach(KeyValuePair<Obst,int> o in Storage.obst)
+                Obst o = Storage.obst.ElementAt(i).Key;
+                if (o == obst)
                 {
-                    if (o.Key == obst)
-                    {
-                        n++;
-                        break;
-                    }
-                    n++;
+                    n = i + 1;
                 }
-                if (n == 0)
-                {
-                    Storage.obst.Add(obst, obst.Menge/MaximaleLast);
-                    n = Storage.obst.Count;
-                }
+            }
+
+            if (n == 0)
+            {
+                Storage.obst.Add(obst, obst.Menge / MaximaleLast); // Was ist der value?
+                n = Storage.obst.Count;
+            }
+
+            if (AktuelleLast < MaximaleLast)
+            {
+                if (Storage.obst[obst] > 0)
+                    Storage.obst[obst]--;
+                Nimm(obst);
+            }
+            if (BrauchtNochTräger(obst)) // TODO
+            {
                 SprüheMarkierung(2000 + n, 1000);
             }
             Sprint(bau);
@@ -268,7 +294,7 @@ namespace AntMe.Player.AntMe.Ameisen
             }
             else if (markierung.Information > 2000)
             {
-                KeyValuePair<Obst,int> dict = Storage.obst.ElementAt<KeyValuePair<Obst, int>>(markierung.Information - 2000 - 1);
+                KeyValuePair<Obst,int> dict = Storage.obst.ElementAt(markierung.Information - 2000 - 1);
                 Obst o = dict.Key;
                 Denke(dict.Value.ToString());
                 if (dict.Value > 0 && AktuelleLast == 0 && apple != o)
@@ -278,7 +304,7 @@ namespace AntMe.Player.AntMe.Ameisen
                         if (getD(a, apple) < getD(a, o))
                             return;
                     }
-                    Storage.obst[o]--;
+                    //Storage.obst[o]--;
                     apple = o;
                     Sprint(apple);
                 }
