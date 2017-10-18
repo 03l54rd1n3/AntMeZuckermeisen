@@ -106,7 +106,6 @@ namespace AntMe.Player.AntMe.Ameisen
         
         public override void IstGestorben(Todesart todesart)
         {
-            Denke(((Todesart)todesart).ToString());
             Storage.ants.Remove(this);
         }
 
@@ -116,7 +115,6 @@ namespace AntMe.Player.AntMe.Ameisen
             if (Ziel != apple && GetragenesObst != apple)
             {
                 apple = null;
-                Denke("OhOh");
             }
            
             if(GetragenesObst != null)
@@ -131,44 +129,9 @@ namespace AntMe.Player.AntMe.Ameisen
         
         public override void Sieht(Obst obst)
         {
-            if(!Storage.obst.ContainsKey(obst))
+            if(AktuelleLast == 0)
             {
-                Storage.obst.Add(obst, new List<Brain>());
-                Storage.äpfel.Add(obst);
-            }
-            List<Brain> träger = Storage.obst[obst];
-            if (AktuelleLast < MaximaleLast)
-            {
-                bool take = true;
-                try
-                {
-                    if (sugar != null && getD(a, obst) + getD(obst, bau) > getD(a, sugar) + getD(sugar, bau))
-                    {
-                        take = false;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    take = false;
-                    Denke(ex.Message);
-                }
-
-                if (take)
-                {
-                    apple = obst;
-                    sugar = null;
-                    if (!träger.Contains(this))
-                    {
-                        Storage.obst[obst].Add(this);
-                    }
-                    Sprint(apple);
-                }
-            }
-
-            
-            if (BrauchtNochTräger(obst)) // TODO
-            {
-                SprüheMarkierung(2000 + n, 1000);
+                Sprint(obst);
             }
         }
         
@@ -190,7 +153,7 @@ namespace AntMe.Player.AntMe.Ameisen
             }
             SprüheMarkierung(1000 + n, 1000);
 
-            if (((sugar == null && AktuelleLast == 0) || (AktuelleLast < MaximaleLast)) && apple == null)
+            if (((sugar == null && AktuelleLast == 0) || (AktuelleLast < MaximaleLast)))
             {
                 sugar = zucker;
                 Sprint(sugar);
@@ -200,33 +163,7 @@ namespace AntMe.Player.AntMe.Ameisen
 
         public override void ZielErreicht(Obst obst)
         {
-            int n = 0;
-
-            for (int i = 0; i < Storage.obst.Count; i++)
-            {
-                Obst o = Storage.obst.ElementAt(i).Key;
-                if (o == obst)
-                {
-                    n = i + 1;
-                }
-            }
-
-            if (n == 0)
-            {
-                Storage.obst.Add(obst, obst.Menge / MaximaleLast); // Was ist der value?
-                n = Storage.obst.Count;
-            }
-
-            if (AktuelleLast < MaximaleLast)
-            {
-                if (Storage.obst[obst] > 0)
-                    Storage.obst[obst]--;
-                Nimm(obst);
-            }
-            if (BrauchtNochTräger(obst)) // TODO
-            {
-                SprüheMarkierung(2000 + n, 1000);
-            }
+            Nimm(obst);
             Sprint(bau);
         }
 
@@ -244,6 +181,11 @@ namespace AntMe.Player.AntMe.Ameisen
                 }
 
                 Sprint(bau);
+            }
+            else
+            {
+                DreheUm();
+                GeheGeradeaus();
             }
         }
 
@@ -265,7 +207,6 @@ namespace AntMe.Player.AntMe.Ameisen
                             if ((getD(bau, z) > getD(bau, sugar)) && getD(a, z)
                                 + getD(z, bau) > getD(a, sugar) + getD(sugar, bau))
                             {
-                                //Denke("Inefficient");
                                 return;
                             }
                         }
@@ -292,23 +233,6 @@ namespace AntMe.Player.AntMe.Ameisen
                     Storage.zucker.RemoveAt(markierung.Information - 1000 - 1);
                 }
             }
-            else if (markierung.Information > 2000)
-            {
-                KeyValuePair<Obst,int> dict = Storage.obst.ElementAt(markierung.Information - 2000 - 1);
-                Obst o = dict.Key;
-                Denke(dict.Value.ToString());
-                if (dict.Value > 0 && AktuelleLast == 0 && apple != o)
-                {
-                    if (apple != null)
-                    {
-                        if (getD(a, apple) < getD(a, o))
-                            return;
-                    }
-                    //Storage.obst[o]--;
-                    apple = o;
-                    Sprint(apple);
-                }
-            }
         }
 
         public override void SiehtFreund(Ameise ameise)
@@ -328,29 +252,40 @@ namespace AntMe.Player.AntMe.Ameisen
         public override void SiehtFeind(Ameise ameise)
         {
             int alpha = Richtung;
-            int beta = getA(a, ameise);
-            int phi = Math.Abs(beta - alpha) % 360;
-            int r = phi > 180 ? 360 - phi : phi;
-            int sign = (alpha - beta >= 0 && alpha - beta <= 180) || (alpha - beta <= -180 && alpha - beta >= -360) ? 1 : -1;
-            r *= sign;
-            if (-30 < r && r < 30)
-            {
-                if (Ziel != null)
-                {
-                    if (getD(a, Ziel) < getD(a, ameise))
-                        return;
-                }
+            int delta = Ziel != null ? getA(a, Ziel) : Richtung;
+            int dif = Math.Abs(alpha - delta);
 
-                int[] Weg = new Umleitung(a, ameise).Weg;
-                evading = true;
-                BleibStehen();
-                DreheUmWinkel(Weg[0]);
-                GeheGeradeaus(Weg[1]);
-                if(Weg[0] == 0 && Weg[1] == 0)
+            if(dif <= 20)
+            {
+                int beta = getA(a, ameise);
+                int phi = Math.Abs(beta - alpha) % 360;
+                int r = phi > 180 ? 360 - phi : phi;
+                int sign = (alpha - beta >= 0 && alpha - beta <= 180) || (alpha - beta <= -180 && alpha - beta >= -360) ? 1 : -1;
+                r *= sign;
+                if (-30 < r && r < 30)
                 {
-                    if (bau != null && getD(a, bau) < 700)
-                        SprüheMarkierung(AnzahlFremderAmeisenInSichtweite + AnzahlAmeisenDesTeamsInSichtweite, 700);
+                    if (Ziel != null)
+                    {
+                        if (getD(a, Ziel) < getD(a, ameise))
+                            return;
+                    }
+
+                    int[] Weg = new Umleitung(a, ameise).Weg;
+                    evading = true;
+                    BleibStehen();
+                    DreheUmWinkel(Weg[0]);
+                    GeheGeradeaus(Weg[1]);
+                    if (Weg[0] == 0 && Weg[1] == 0)
+                    {
+                        if (bau != null && getD(a, bau) < 700)
+                            SprüheMarkierung(AnzahlFremderAmeisenInSichtweite + AnzahlAmeisenDesTeamsInSichtweite, 700);
+                    }
                 }
+            }
+            else
+            {
+                
+                Sprint(Ziel != null ? Ziel : bau);
             }
         }
 

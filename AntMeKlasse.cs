@@ -101,7 +101,7 @@ namespace AntMe.Player.AntMe
                 brain = new Schutzstaffel(this);
                 return "Schutzstaffel";
             }
-
+            
             brain = new Malte(this);
             return "Malte";
             //return "Standard";

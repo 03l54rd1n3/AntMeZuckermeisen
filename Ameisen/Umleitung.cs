@@ -43,7 +43,7 @@ public class Umleitung {
 		ownSpeed = ego.MaximaleGeschwindigkeit;
 
 		if(enemyDistance > enemySpeed)
-		{
+        {
 			escTurns = (int) Math.Ceiling(10*enemySpeed / (double) ownSpeed);
 			escAngle = ((enemyDistance / enemySpeed - escTurns) *6) * enemyAngle;
 			escDistance = escTurns * ownSpeed;

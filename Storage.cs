@@ -9,8 +9,8 @@ namespace AntMe.Player.AntMe
     public static class Storage
     {
         public static List<Zucker> zucker = new List<Zucker>();
-        public static Dictionary<Obst, List<Brain>> obst = new Dictionary<Obst, List<Brain>>();
-        public static List<Obst> äpfel = new List<Obst>();
+        
+
         public static List<Brain> ants = new List<Brain>();
         public static Dictionary<int, bool> scouting = new Dictionary<int, bool>();
         public static List<Ameise> enemy = new List<Ameise>();

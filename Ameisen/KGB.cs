@@ -115,22 +115,7 @@ namespace AntMe.Player.AntMe.Ameisen
         
         public override void Sieht(Obst obst)
         {
-            int n = 0;
-            foreach (KeyValuePair<Obst, int> o in Storage.obst)
-            {
-                if (o.Key == obst)
-                {
-                    n++;
-                    break;
-                }
-                n++;
-            }
-            if (n == 0)
-            {
-                Storage.obst.Add(obst, obst.Menge / MaximaleLast);
-                n = Storage.obst.Count;
-            }
-            SprüheMarkierung(2000 + n, 1000);
+            
         }
 
         public override void Sieht(Zucker zucker)
@@ -199,7 +184,6 @@ namespace AntMe.Player.AntMe.Ameisen
                     if (getD(a, Ziel) < getD(a, ameise))
                         return;
                 }
-                Denke("Nope.");
                 int[] Weg = new Umleitung(a, ameise).Weg;
                 BleibStehen();
                 DreheUmWinkel(Weg[0]);
